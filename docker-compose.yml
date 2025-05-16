@@ -1,0 +1,72 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: HV-AI
+    environment:
+      - PYTHONUNBUFFERED=1
+      - TZ=Asia/Taipei  # 設置時區為 Asia/Taipei
+      - DOCKER_HOST=redis  # 添加 Redis 主機環境變量
+      - DOCKER_PORT=6379   # 添加 Redis 端口環境變量
+    depends_on:
+      redis:
+        condition: service_healthy  # 等待 Redis 健康檢查通過
+      
+    volumes: # 將主機的目錄掛載到容器的 /app 目錄
+      - ./app:/app
+    networks:
+      - hvai-network
+
+  redis:
+    image: redis:6.2.6
+    container_name: HV-redis
+    environment:
+      - TZ=Asia/Taipei  # 可選，為 Redis 設置時區
+    ports:
+      - "16379:6379"
+    volumes:
+      - ./redis_data/data:/data  # 持久化 Redis 數據
+      - ./redis_data/redis.conf:/etc/redis/redis.conf  # 使用自定義的 Redis 配置文件
+    command: redis-server /etc/redis/redis.conf  # 指定啟動時使用的配置文件
+    healthcheck:  # 添加健康檢查
+      test: ["CMD", "redis-cli", "ping"]  # 使用 redis-cli ping 檢查 Redis 是否響應
+      interval: 5s  # 每 5 秒檢查一次
+      timeout: 3s   # 每次檢查超時時間
+      retries: 5    # 失敗 5 次後認為不健康
+      start_period: 10s  # 給 Redis 10 秒的啟動時間
+    networks:
+      - hvai-network
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: HV-ollama
+    environment:
+      - TZ=Asia/Taipei
+      - OLLAMA_MODELS=llama3.1:8b,llama2:13b,mistral:latest,gemma3:27b,deepseek-r1:32b,qwen3:32b  # 定義模型清單
+    ports:
+      - "11434:11434"
+    volumes:
+      - ./ollama_data/data:/root/.ollama
+      - ./ollama_data/ollama_init.sh:/ollama_init.sh  # 掛載自定義腳本
+    entrypoint: ["/bin/sh", "-c", "chmod +x /ollama_init.sh && /ollama_init.sh"]
+
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    networks:
+      - hvai-network
+
+networks:
+  hvai-network:
+    driver: bridge
+
+volumes:
+  redis_data:
+    driver: local
+  ollama_data:
+    driver: local

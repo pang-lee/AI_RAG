@@ -1,0 +1,6 @@
+/app/logs
+/app/.env
+/app/paths.json
+/app/settings/create/model/test_model/
+/redis_data/data
+/ollama_data/data
