@@ -7,6 +7,7 @@
 # FilePath: \openai\application\generate_file.py
 # '''
 import json, os, shutil, importlib
+import torch
 from .logger import Logger
 template_logger = Logger(name='generate_template_logger')
 
@@ -119,7 +120,7 @@ def check_path_exist(task_data):
     # 读取 path.json 文件
     if not os.path.isfile(json_path):
         template_logger.get_logger().info("path.json file not found in check_path.")
-        if not os.path.exists(json_path): # 文件不存在，创建一个新的 JSON 文件
+        if not os.path.exists(json_path): # 文件不存在，创建一个新的 path.json 文件
             initial_data = {}
             with open(json_path, 'w', encoding='utf-8') as file:
                 json.dump(initial_data, file, indent=4, ensure_ascii=False)
@@ -218,6 +219,50 @@ def build_ai_by_vendor(task_data, system_setting_data, setting_path, vendor):
 
             # 回傳是否有設定成功(True: 成功, False: 失敗)
             return status
+
+        except Exception as e:
+            template_logger.get_logger().error(f"An error occurred while building the model: {e}")
+            return False
+
+    elif vendor == 'Ollama': # ollama
+        try:
+            LONG_TEXT_CONFIG = {
+                "num_ctx": 16384,
+                "max_token": 1024
+            }
+            
+            # 如果available中沒有模型, 預設用gpt-3.5-turbo
+            if task_data['data']['aics_model_val'] not in system_setting_data[vendor]['available']:
+                task_data['data']['aics_model_val'] = 'mistral:latest'
+                
+            # 獲取選擇的模型
+            selected_model = task_data['data']['aics_model_val']
+        
+            # Lambda 函數：計算 num_ctx
+            calc_num_ctx = lambda model, model_max_ctx: min(
+                model_max_ctx.get(model, 4096),  # 默認 4k
+                LONG_TEXT_CONFIG["num_ctx"]
+            )
+        
+            # Lambda 函數：獲取 max_tokens
+            calc_max_tokens = lambda: LONG_TEXT_CONFIG["max_tokens"]
+        
+            # Lambda 函數：檢測 GPU 數量
+            calc_num_gpu = lambda: (
+                torch.cuda.device_count() if 'torch' in globals() and torch.cuda.is_available() else 0
+            )
+        
+            # 更新 Ollama 配置
+            system_setting_data[vendor]['model'] = selected_model
+            system_setting_data[vendor]['num_ctx'] = calc_num_ctx(
+                selected_model, system_setting_data[vendor]['model_max_ctx']
+            )
+            system_setting_data[vendor]['max_tokens'] = calc_max_tokens()
+            system_setting_data[vendor]['num_gpu'] = calc_num_gpu()
+        
+            # 保存 JSON 文件
+            save_json_file(setting_path, system_setting_data)
+            return True
 
         except Exception as e:
             template_logger.get_logger().error(f"An error occurred while building the model: {e}")

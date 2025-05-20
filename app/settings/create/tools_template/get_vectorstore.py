@@ -6,12 +6,13 @@
 # Description: create function calling tool
 # FilePath: \openai\template\create\tool.py
 # '''
-import os, re
+import re
 from langchain.tools import BaseTool
 from langchain_community.vectorstores import FAISS
 from dotenv import load_dotenv
 load_dotenv()
 from langchain_openai import OpenAIEmbeddings
+from langchain_ollama import OllamaEmbeddings  # 替換為 Ollama 嵌入
 from .tools_utils import get_namespace_system_json_embedding
 from ...logger import Logger
 vc_logger = Logger(name='get_vectorstore_logger')

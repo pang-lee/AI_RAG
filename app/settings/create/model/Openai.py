@@ -152,7 +152,6 @@ class Openai(BaseModel):
         openai_model_logger.get_logger().error('Assistant_id not found or not provided when instantiating the Openai model.')
         raise RuntimeError('Assistant_id not found or not provided when instantiating the Openai model.')
 
-
     # 执行 Agent 并统计 Token, 函數回傳為(AI生成結果, tool, token數)
     def execute_agent(self, agent, tools, input, max_retries=3, **kwargs):
         tool_map = {tool.name: tool for tool in tools}
@@ -286,7 +285,6 @@ class Openai(BaseModel):
             if not session_data: # 如果不存在，则创建一个新的 session.json 文件
 
                 result, tool, total_prompt_tokens, total_completion_tokens, total_embedding_tokens, total_tokens = self.execute_agent(self.client_assistant, self.tools, {'content': query}, **kwargs)
-
 
                 # 如果回傳的不是錯誤訊息False, 則寫入thread_id
                 if not isinstance(result, bool):

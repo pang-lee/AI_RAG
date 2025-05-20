@@ -220,8 +220,8 @@ class TaskProcessor:
 
                 # 依照system_setting.json中的設定, 找出embed和當前的LLM, 給後續計算token數使用
                 setting_params = {}
-                embed_model_data = model_data = system_data.get('Embedding', {}).get('model', {})
-                dynamic_key, embedding_model = next(iter(embed_model_data.items()))
+                embed_model_data = system_data.get('Embedding', {}).get('model', {})
+                _, embedding_model = next(iter(embed_model_data.items()))
                 setting_params['embed'] = embedding_model
                 setting_params['llm'] = system_data[chosen_entry]['model']
 
@@ -584,34 +584,37 @@ class TaskProcessor:
         task_data = self.fetch_data_from_redis()
         return self.process_task(task_data)
 
-# 启动调度器
-scheduler = BackgroundScheduler()
-scheduler.start()
+# # 启动调度器
+# scheduler = BackgroundScheduler()
+# scheduler.start()
+
+# if __name__ == '__main__':
+#     try:
+
+#         index_logger = logger.Logger(name='index_logger')
+#         processor = TaskProcessor(redis_cluster=my_redis.get_redis_client(), log=index_logger)
+#         scheduler.add_job(processor.fetch_and_process, 'interval', seconds=1, max_instances=100)
+#         scheduler.add_job(index_logger.move_old_logs, 'interval', days=1)
+        
+#         index_logger.get_logger().info('Start The Scheduler.')
+
+#         # 让主线程保持运行
+#         while True:
+#             time.sleep(5)
+
+#     except Exception as e:
+#         index_logger.get_logger().error(f'There is something went wrong in index.py: {e}')
+#     except KeyboardInterrupt:
+#         index_logger.get_logger().info('Keyboard Interrupt The Scheduler.')
+#     finally:
+#         #关闭调度器
+#         scheduler.shutdown()
+#         index_logger.get_logger().info('ShutDown The Scheduler.')
 
 if __name__ == '__main__':
-    try:
-
-        index_logger = logger.Logger(name='index_logger')
-        processor = TaskProcessor(redis_cluster=my_redis.get_redis_client(), log=index_logger)
-        scheduler.add_job(processor.fetch_and_process, 'interval', seconds=1, max_instances=100)
-        scheduler.add_job(index_logger.move_old_logs, 'interval', days=1)
-        
-        index_logger.get_logger().info('Start The Scheduler.')
-
-        # 让主线程保持运行
-        while True:
-            time.sleep(5)
-
-    except Exception as e:
-        index_logger.get_logger().error(f'There is something went wrong in index.py: {e}')
-    except KeyboardInterrupt:
-        index_logger.get_logger().info('Keyboard Interrupt The Scheduler.')
-    finally:
-        #关闭调度器
-        scheduler.shutdown()
-        index_logger.get_logger().info('ShutDown The Scheduler.')
-
-
+    from test.torch import test
+    test()
+    
 
 # -------------------------- 測試用例 --------------------------
 
