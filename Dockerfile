@@ -14,7 +14,8 @@ WORKDIR /app
 
 COPY requirements.txt ./
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+    pip install --no-cache-dir -r requirements.txt && \
+    pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
 
 # 复制项目的所有文件到工作目录
 COPY ./app .

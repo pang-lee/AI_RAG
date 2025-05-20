@@ -17,7 +17,7 @@ deepdiff==7.0.1
 distro==1.9.0
 emoji==2.12.1
 exceptiongroup==1.2.1
-faiss-cpu==1.7.2
+faiss-gpu==1.7.2
 filetype==1.2.0
 frozenlist==1.4.1
 greenlet==3.0.3
@@ -31,10 +31,11 @@ jsonpath-python==1.0.6
 jsonpointer==3.0.0
 langchain==0.3.25
 langchain-community==0.3.24
-langchain-core==0.3.59
+langchain-core
 langchain-experimental==0.3.4
 langchain-openai==0.3.16
 langchain-text-splitters==0.3.8
+langchain-ollama==0.3.3
 langdetect==1.0.9
 langsmith==0.3.42
 lxml==5.2.2
@@ -49,8 +50,8 @@ ordered-set==4.1.0
 orjson==3.10.6
 packaging==24.1
 pandas==2.2.2
-pydantic==2.8.2
-pydantic_core==2.20.1
+pydantic==2.9.0
+pydantic_core
 PyMySQL==1.1.1
 pypdf==4.2.0
 python-dateutil==2.9.0.post0

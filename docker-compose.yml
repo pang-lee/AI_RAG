@@ -9,15 +9,22 @@ services:
       - TZ=Asia/Taipei  # 設置時區為 Asia/Taipei
       - DOCKER_HOST=redis  # 添加 Redis 主機環境變量
       - DOCKER_PORT=6379   # 添加 Redis 端口環境變量
+      - OLLAMA_SERVER=http://ollama:11434
     depends_on:
       redis:
         condition: service_healthy  # 等待 Redis 健康檢查通過
-      
     volumes: # 將主機的目錄掛載到容器的 /app 目錄
       - ./app:/app
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
     networks:
       - hvai-network
-
+  
   redis:
     image: redis:6.2.6
     container_name: HV-redis
@@ -36,14 +43,15 @@ services:
       retries: 5    # 失敗 5 次後認為不健康
       start_period: 10s  # 給 Redis 10 秒的啟動時間
     networks:
-      - hvai-network
+      - hvai-network  
 
   ollama:
     image: ollama/ollama:latest
     container_name: HV-ollama
     environment:
       - TZ=Asia/Taipei
-      - OLLAMA_MODELS=llama3.1:8b,llama2:13b,mistral:latest,gemma3:27b,deepseek-r1:32b,qwen3:32b  # 定義模型清單
+      - OLLAMA_MODELS=mistral:latest  # 定義模型清單
+      # - OLLAMA_MODELS=llama3.1:8b,llama2:13b,mistral:latest,gemma3:27b,deepseek-r1:32b,qwen3:32b  # 定義模型清單
     ports:
       - "11434:11434"
     volumes:
