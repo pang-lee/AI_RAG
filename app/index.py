@@ -612,8 +612,11 @@ class TaskProcessor:
 #         index_logger.get_logger().info('ShutDown The Scheduler.')
 
 if __name__ == '__main__':
-    from test.torch import test
+    from test.GPU import test
     test()
+    
+    # while True:
+    #     time.sleep(5)
     
 
 # -------------------------- 測試用例 --------------------------
@@ -712,7 +715,7 @@ if __name__ == '__main__':
 #           "namespace":"TestApplication",
 #           "ID":"1"}
 
-#  task_g  =   {  "op":"del_datasource",
+# task_g  =   {  "op":"del_datasource",
 #           "data":{
 #              'aics_vdb_code': 'juice_vdb',
 #                "ids": 

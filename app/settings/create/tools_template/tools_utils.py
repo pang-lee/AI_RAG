@@ -7,6 +7,8 @@
 # FilePath: \openai\application\settings\create\tools_template\tools_utils.py
 # '''
 import os, json
+import faiss
+import torch
 
 def get_namespace_system_json_embedding(file_path):
     # 拼接得到 "system.json" 文件的路径
@@ -17,7 +19,23 @@ def get_namespace_system_json_embedding(file_path):
     
     embedding_model = data.get('Embedding', {}).get('model', {})
     
-    # 只获取 embedding_model 的dict中value的部分
-    embedding_model_values = list(embedding_model.values())
+    # 直接返回 key 和 value
+    for key, value in embedding_model.items():
+        return key, value
+    
+    # 如果 embedding_model 為空，返回默認值
+    return None, None
 
-    return embedding_model_values[0]
+def convert_index_to_gpu(index, log):
+    """將 FAISS 索引轉為 GPU 索引（如果有可用 GPU），否則返回原索引"""
+    if not torch.cuda.is_available():
+        log.info(f"當前torch檢查結果: {torch.cuda.is_available()}, 沒有GPU, 使用CPU 索引")
+        return index
+    
+    if faiss.get_num_gpus() > 0:
+        log.info(f"檢測到 {faiss.get_num_gpus()} 個 GPU，轉換為 GPU 索引")
+        res = faiss.StandardGpuResources()
+        return faiss.index_cpu_to_gpu(res, 0, index)
+    else:
+        log.info("警告：未檢測到 GPU，使用 CPU 索引")
+        return index

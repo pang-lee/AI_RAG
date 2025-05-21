@@ -8,6 +8,6 @@
 # '''
 from .EmbedBase import BaseEmbedding
 from .OpenaiEmbeddings import OpenaiEmbeddings
-from .QianfanEmbeddings import QianfanEmbeddings
+from .OllamaEmbeddings import OllamaEmbeddings
 
-__all__ = ['BaseEmbedding', 'OpenaiEmbeddings', 'QianfanEmbeddings']
+__all__ = ['BaseEmbedding', 'OpenaiEmbeddings', 'OllamaEmbeddings']

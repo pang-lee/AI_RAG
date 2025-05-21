@@ -1,30 +1,28 @@
 services:
+  # 使用cuda的image檔並安裝套件啟動整體服務
   app:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: HV-AI
+    runtime: nvidia  # 明確指定 NVIDIA 運行時
     environment:
       - PYTHONUNBUFFERED=1
-      - TZ=Asia/Taipei  # 設置時區為 Asia/Taipei
-      - DOCKER_HOST=redis  # 添加 Redis 主機環境變量
-      - DOCKER_PORT=6379   # 添加 Redis 端口環境變量
+      - PYTHONDONTWRITEBYTECODE=1
+      - TZ=Asia/Taipei
+      - DOCKER_HOST=redis
+      - DOCKER_PORT=6379
       - OLLAMA_SERVER=http://ollama:11434
+      - NVIDIA_VISIBLE_DEVICES=all  # 確保所有 GPU 可見
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility  # 支援計算和工具（如 nvidia-smi）
     depends_on:
       redis:
-        condition: service_healthy  # 等待 Redis 健康檢查通過
-    volumes: # 將主機的目錄掛載到容器的 /app 目錄
+        condition: service_healthy
+    volumes:
       - ./app:/app
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
     networks:
       - hvai-network
-  
+
   redis:
     image: redis:6.2.6
     container_name: HV-redis
@@ -50,8 +48,8 @@ services:
     container_name: HV-ollama
     environment:
       - TZ=Asia/Taipei
-      - OLLAMA_MODELS=mistral:latest  # 定義模型清單
-      # - OLLAMA_MODELS=llama3.1:8b,llama2:13b,mistral:latest,gemma3:27b,deepseek-r1:32b,qwen3:32b  # 定義模型清單
+      - OLLAMA_MODELS=mistral:latest,mxbai-embed-large:latest,nomic-embed-text:latest  # 定義模型清單
+      # - OLLAMA_MODELS=llama3.1:8b,llama2:13b,gemma3:27b,deepseek-r1:32b,qwen3:32b,mistral:latest,mxbai-embed-large:latest,nomic-embed-text:latest # 定義模型清單
     ports:
       - "11434:11434"
     volumes:
@@ -78,3 +76,32 @@ volumes:
     driver: local
   ollama_data:
     driver: local
+
+
+# # 使用Python的image檔啟動整體服務
+# app:
+#   build:
+#     context: .
+#     dockerfile: Dockerfile
+#   container_name: HV-AI
+#   environment:
+#     - PYTHONUNBUFFERED=1
+#     - PYTHONDONTWRITEBYTECODE=1
+#     - TZ=Asia/Taipei  # 設置時區為 Asia/Taipei
+#     - DOCKER_HOST=redis  # 添加 Redis 主機環境變量
+#     - DOCKER_PORT=6379   # 添加 Redis 端口環境變量
+#     - OLLAMA_SERVER=http://ollama:11434  # 添加 Ollama 服務器環境變量
+#   depends_on:
+#     redis:
+#       condition: service_healthy  # 等待 Redis 健康檢查通過
+#   volumes: # 將主機的目錄掛載到容器的 /app 目錄
+#     - ./app:/app
+#   networks:
+#     - hvai-network
+#   deploy:
+#     resources:
+#       reservations:
+#         devices:
+#           - driver: nvidia
+#             count: 1
+#             capabilities: [gpu]

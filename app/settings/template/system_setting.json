@@ -9,12 +9,9 @@
                 "text-embedding-3-small",
                 "text-embedding-ada-002"
             ],
-            "QianfanEmbeddings": [
-                "bge-large-zh"
-            ],
             "OllamaEmbeddings": [
-                "mxbai-embed-large",
-                "sunzhiyuan/suntray-embedding"
+                "mxbai-embed-large:latest",
+                "nomic-embed-text:latest"
             ]
         }
     },
@@ -37,33 +34,9 @@
         "function_call_active": [],
         "choosen_ai": 0
     },
-    "QianFan": {
-        "model": "ERNIE-Speed-128K",
-        "top_p": 1.0,
-        "penalty_score": 2,
-        "temperature": 0.1,
-        "system_prompt": "你是一個助手機器人, 所有回答請使用繁體中文, 請根據問題使用相對應的tool進行回答, 如果你沒有找到相對應的tool, 請回答「抱歉超出我所了解的範圍」",
-        "disable_search": "True",
-        "enable_citation": "True",
-        "enable_trace": "True",
-        "max_output_tokens": 2048,
-        "available": [
-            "ERNIE-Speed-128K"
-        ],
-        "function_call_active": [],
-        "choosen_ai": 0
-    },
-    "VolcEngine": {
-        "model": "Skylark2-pro-character-4k",
-        "available": [
-            "Skylark2-pro-character-4k",
-            "Doubao-pro-128k"
-        ],
-        "function_call_active": [],
-        "choosen_ai": 0
-    },
     "Ollama": {
         "model": "mistral:latest",
+        "system_prompt": "你是一個助手機器人, 請根據問題使用相對應的tool進行回答, 如果你沒有找到相對應的tool, 請回答「抱歉超出我所了解的範圍」",
         "available": [
             "qwen3:32b",
             "deepseek-r1:32b",
@@ -84,7 +57,7 @@
         "temperature": 0.1,
         "top_p": 0.9,
         "top_k": 30,
-        "keep_alive": 300,
+        "keep_alive": 0,
         "max_tokens": 512,
         "num_ctx": 8190,
         "num_gpu": 1,
