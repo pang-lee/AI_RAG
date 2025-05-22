@@ -23,12 +23,34 @@ class BaseModel(ABC):
         return self.initialize_model_tools(kwargs.get('namespace'))
     
     def read_setting_file(self, namespace_path):
+        """ Return
+            {
+                "embed": "text-embedding-3-large",
+                "llm": {
+                    "assistant_name": "我是AI超級小助手",
+                    "model": "gpt-3.5-turbo",
+                    ...,
+                    "choosen_ai": 1
+                }
+            }
+        """
         with open(os.path.join(namespace_path, 'system_setting.json'), 'r', encoding='utf-8') as config_file:
             config = json.load(config_file)
-        
-        filtered_data = {key: value for key, value in config.items() if value.get("choosen_ai") == 1}
-        
-        return filtered_data
+
+        # Extract the embedding model
+        model_dict = config.get("Embedding", {}).get("model", {})
+        embedding_model = next(iter(model_dict.values()), "") if model_dict else ""
+
+        # Filter data where choosen_ai is 1
+        filtered_data = next((value for key, value in config.items() if value.get("choosen_ai") == 1), {})
+
+        # Combine embedding model and filtered data into the desired format
+        result = {
+            "embed": embedding_model,
+            "llm": filtered_data
+        }
+
+        return result
 
     def initialize_model_tools(self, namespace_path):
         config = self.read_setting_file(namespace_path)

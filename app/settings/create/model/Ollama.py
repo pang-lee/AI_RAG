@@ -28,15 +28,15 @@ class Ollama(BaseModel):
         self.config = self.read_setting_file(path)
 
         self.llm = ChatOllama(
-            model=self.config['model'],
+            model=self.config['llm']['model'],
             base_url=os.getenv('OLLAMA_SERVER'),
-            temperature=self.config['temperature'],
-            max_tokens=self.config['max_tokens'],
-            keep_alive=self.config['keep_alive'],
-            top_p=self.config['top_p'],
-            top_k=self.config['top_k'],
-            num_ctx=self.config['num_ctx'],
-            num_gpu=self.config['num_gpu']
+            temperature=self.config['llm']['temperature'],
+            max_tokens=self.config['llm']['max_tokens'],
+            keep_alive=self.config['llm']['keep_alive'],
+            top_p=self.config['llm']['top_p'],
+            top_k=self.config['llm']['top_k'],
+            num_ctx=self.config['llm']['num_ctx'],
+            num_gpu=self.config['llm']['num_gpu']
         )
         
         return self.llm
@@ -44,11 +44,11 @@ class Ollama(BaseModel):
     def execute_agent(self, query, history=None, **kwargs):
         try:
             # 獲取當前模型名稱
-            model_name = self.config['model']
+            model_name = self.config['llm']['model']
             
             # 如果有歷史對話，將其加入提示模板
             messages = [
-                ("system", f"{self.config['system_prompt']}"),
+                ("system", f"{self.config['llm']['system_prompt']}"),
             ]
 
             # 將歷史對話加入提示（如果存在）
@@ -61,7 +61,7 @@ class Ollama(BaseModel):
             messages.append(("user", "{input}"))
             
             # 構造完整的提示文本（用於 token 計數）
-            prompt_text = self.config['system_prompt']
+            prompt_text = self.config['llm']['system_prompt']
             if history:
                 for entry in history:
                     prompt_text += f"\nUser: {entry['user']}\nAssistant: {entry['assistant']}"

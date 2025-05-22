@@ -215,19 +215,7 @@ class TaskProcessor:
                 elif chosen_entry == 'Ollama': # 如果選用的是ollama
                     ai_module_class = self.dynamic_load_model(model_entry=chosen_entry, module_path=module_path, namespace=os.path.join(namespace, id))
 
-                # 依照system_setting.json中的設定, 找出embed和當前的LLM, 給後續計算token數使用
-                setting_params = {}
-                embed_model_data = system_data.get('Embedding', {}).get('model', {})
-                _, embedding_model = next(iter(embed_model_data.items()))
-                setting_params['embed'] = embedding_model
-                setting_params['llm'] = system_data[chosen_entry]['model']
-
-                respond, funcall, total_prompt_tokens, total_completion_tokens, total_embedding_tokens, total_tokens = ai_module_class.chat_with_ai(
-                    query=task_data['data']['text'],
-                    session=task_data['sid'],
-                    namespace_path=os.path.join(namespace, id),
-                    **setting_params
-                )
+                respond, funcall, total_prompt_tokens, total_completion_tokens, total_embedding_tokens, total_tokens = ai_module_class.chat_with_ai(query=task_data['data']['text'], session=task_data['sid'], namespace_path=os.path.join(namespace, id))
 
                 resp_data = {
                     'sid': task_data['sid'],

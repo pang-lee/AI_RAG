@@ -20,6 +20,7 @@ class Openai(BaseModel):
     def __init__(self):
         super.__init__(openai_model_logger)
         self.client_assistant = None
+        self.config = None
 
     def build_model(self, **kwargs):
         try:
@@ -78,18 +79,19 @@ class Openai(BaseModel):
             self.client_assistant = CustomAssistant(assistant_id=assistant, as_agent=True)
             path = kwargs.get('path', '')
             self.initialize_model_tools(path)
-
+            self.config = self.read_setting_file(path)
+            
             return self.client_assistant
-        
+
         self.log.error('Assistant_id not found or not provided when instantiating the Openai model.')
         raise RuntimeError('Assistant_id not found or not provided when instantiating the Openai model.')
 
     # 执行 Agent 并统计 Token, 函數回傳為(AI生成結果, tool, token數)
-    def execute_agent(self, agent, tools, input, max_retries=3, **kwargs):
+    def execute_agent(self, agent, tools, input, max_retries=3):
         tool_map = {tool.name: tool for tool in tools}
 
         # 初始化 Token 计数
-        total_prompt_tokens = count_tokens(input['content'], model=kwargs.get('llm'))
+        total_prompt_tokens = count_tokens(input['content'], model=self.config['llm']['model'])
         total_completion_tokens = 0
         total_embedding_tokens = 0
          
@@ -109,10 +111,10 @@ class Openai(BaseModel):
                         embedding_tokens = 0
                         if isinstance(action.tool_input, dict):  # 检查是否为字典
                             for key, value in action.tool_input.items():
-                                embedding_tokens += count_tokens(value, model=kwargs.get('embed'))
+                                embedding_tokens += count_tokens(value, model=self.config['embed'])
                         else:
                             # 如果 tool_input 不是字典，直接计算 token 数量
-                            embedding_tokens = count_tokens(action.tool_input, model=kwargs.get('embed'))
+                            embedding_tokens = count_tokens(action.tool_input, model=self.config['embed'])
 
                         total_embedding_tokens += embedding_tokens
 
@@ -138,7 +140,7 @@ class Openai(BaseModel):
 
                     # 统计工具输出的 Completion Tokens
                     for output in tool_outputs:
-                        total_completion_tokens += count_tokens(output["output"], model=kwargs.get('llm'))
+                        total_completion_tokens += count_tokens(output["output"], model=self.config['llm']['model'])
 
                     # 继续 Agent 的处理
                     response = agent.invoke(
@@ -149,7 +151,7 @@ class Openai(BaseModel):
                         }
                     )
 
-                    total_completion_tokens += count_tokens(response.return_values["output"], model=kwargs.get('llm'))
+                    total_completion_tokens += count_tokens(response.return_values["output"], model=self.config['llm']['model'])
 
                 # 输出最终 Token 消耗
                 total_tokens = total_prompt_tokens + total_completion_tokens + total_embedding_tokens
@@ -202,7 +204,7 @@ class Openai(BaseModel):
                 # 錯誤無法解析出時間(可能是OpenAI問題), 回傳結束              
                 return False, None, 0, 0, 0, 0
    
-    def chat_with_ai(self, query, session, namespace_path, **kwargs):
+    def chat_with_ai(self, query, session, namespace_path):
         if self.client_assistant is None:
             self.log.error('There is no assistant_id provided when chatting with the Openai model.')
             raise RuntimeError('There is no assistant_id provided when chatting with the Openai model.')
@@ -216,7 +218,7 @@ class Openai(BaseModel):
             # 检查是否有過對話紀錄session.json
             if not session_data: # 如果不存在，则创建一个新的 session.json 文件
 
-                result, tool, total_prompt_tokens, total_completion_tokens, total_embedding_tokens, total_tokens = self.execute_agent(self.client_assistant, self.tools, {'content': query}, **kwargs)
+                result, tool, total_prompt_tokens, total_completion_tokens, total_embedding_tokens, total_tokens = self.execute_agent(self.client_assistant, self.tools, {'content': query})
 
                 # 如果回傳的不是錯誤訊息False, 則寫入thread_id
                 if not isinstance(result, bool):
@@ -231,7 +233,7 @@ class Openai(BaseModel):
             else:
                 # 當對話紀錄超過次數, 重建Thread_id
                 if session_data['cnt'] > 5:                    
-                    result, tool, total_prompt_tokens, total_completion_tokens, total_embedding_tokens, total_tokens = self.execute_agent(self.client_assistant, self.tools, {'content': query}, **kwargs)
+                    result, tool, total_prompt_tokens, total_completion_tokens, total_embedding_tokens, total_tokens = self.execute_agent(self.client_assistant, self.tools, {'content': query})
                  
                     # 如果回傳的不是錯誤訊息, 代表訊息成功生成, 刪除thread
                     if not isinstance(result, bool):
@@ -246,7 +248,7 @@ class Openai(BaseModel):
                 
                 # 沒超過詢問次數5次紀錄, 對話使用原先的上下文
                 else:
-                    result, tool, total_prompt_tokens, total_completion_tokens, total_embedding_tokens, total_tokens = self.execute_agent(self.client_assistant, self.tools, {'content': query, "thread_id": session_data['thread_id']}, **kwargs)
+                    result, tool, total_prompt_tokens, total_completion_tokens, total_embedding_tokens, total_tokens = self.execute_agent(self.client_assistant, self.tools, {'content': query, "thread_id": session_data['thread_id']})
 
                     # 如果詢問中超出openai的使用上限, 清除當前thread, 並重新建一個
                     if not isinstance(result, bool) and result.return_values['thread_id'] != session_data['thread_id']:
