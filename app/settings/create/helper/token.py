@@ -20,6 +20,8 @@ ollama_to_hf_mapping = {
     "mistral:latest": "mistral-ai/Mixtral-8x7B-Instruct-v0.1",  # Adjust based on Ollama's version
     "llama2:13b": "meta-llama/Llama-2-13B",
     "llama3.1:8b": "meta-llama/Llama-3.1-8B",
+    "mxbai-embed-large:latest": "mixedbread-ai/mxbai-embed-large-v1",
+    "nomic-embed-text:latest": "nomic-ai/nomic-embed-text-v1.5",
 }
 
 # Initialize Hugging Face tokenizers for Ollama models

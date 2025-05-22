@@ -149,7 +149,7 @@ class TaskProcessor:
              
             # 如果是轉換失敗, 第二個參數, 將log紀錄回傳到外部
             return result, f"Failed to execute file2doc_task function in index.py: {e}"
-        
+
     @staticmethod
     def vectordb_task(task_data):
         # 1. 解构提取 namespace 和 id
@@ -207,15 +207,12 @@ class TaskProcessor:
 
                 # 根据路径 settings/create/ 加载相应的 AI 模块
                 module_path = f"settings.create.model.{chosen_entry}"
-            
    
-                if chosen_entry == 'Openai':
-                    # 如果沒有assistant_id, 則會顯示None
+                if chosen_entry == 'Openai': # 如果沒有assistant_id, 則會顯示None
                     assistant_id = chosen_value.get('assistant_id')
                     ai_module_class = self.dynamic_load_model(model_entry=chosen_entry, assistant_id=assistant_id, module_path=module_path, namespace=os.path.join(namespace, id))
 
-                else:
-                    #如果不是用openai, 則不會有assistnant_id
+                elif chosen_entry == 'Ollama': # 如果選用的是ollama
                     ai_module_class = self.dynamic_load_model(model_entry=chosen_entry, module_path=module_path, namespace=os.path.join(namespace, id))
 
                 # 依照system_setting.json中的設定, 找出embed和當前的LLM, 給後續計算token數使用
@@ -225,7 +222,12 @@ class TaskProcessor:
                 setting_params['embed'] = embedding_model
                 setting_params['llm'] = system_data[chosen_entry]['model']
 
-                respond, funcall, total_prompt_tokens, total_completion_tokens, total_embedding_tokens, total_tokens = ai_module_class.chat_with_ai(query=task_data['data']['text'], session=task_data['sid'], namespace_path=os.path.join(namespace, id), **setting_params)
+                respond, funcall, total_prompt_tokens, total_completion_tokens, total_embedding_tokens, total_tokens = ai_module_class.chat_with_ai(
+                    query=task_data['data']['text'],
+                    session=task_data['sid'],
+                    namespace_path=os.path.join(namespace, id),
+                    **setting_params
+                )
 
                 resp_data = {
                     'sid': task_data['sid'],
@@ -451,18 +453,20 @@ class TaskProcessor:
             module = importlib.import_module(module_path)
             ai_class = getattr(module, model_entry)()
 
-            #如果模型是openai且assistant_id不為None
-            if model_entry == 'Openai' and assistant_id:
+            if model_entry == 'Openai' and assistant_id: # 如果模型是openai且assistant_id不為None
                 if not assistant_id and not namespace:
                     raise RuntimeError("No assistant_id or namespace for initialize tools, not provided when using Openai model")
                 
                 self.log.get_logger().info(f"Model entry is Openai with assistant_id: {assistant_id}")
-                
+
                 ai_class.fetch_model(assistant=assistant_id, path=namespace)
                 return ai_class
-            else:
-                # 當不是使用Openai模型時，使用別的流程
-                self.log.get_logger().info("Model entry is not Openai")
+            
+            elif model_entry == 'Ollama': # 當使用Ollama模型
+                self.log.get_logger().info("Current Model is Ollama")
+                ai_class.fetch_model(path=namespace)
+                return ai_class
+                
         else:
             self.log.get_logger().error("No model entry, chosen model value, module path provided, for chat with AI")
             raise RuntimeError("No model entry, chosen model value, module path provided, for chat with AI")
@@ -584,40 +588,32 @@ class TaskProcessor:
         task_data = self.fetch_data_from_redis()
         return self.process_task(task_data)
 
-# # 启动调度器
-# scheduler = BackgroundScheduler()
-# scheduler.start()
-
-# if __name__ == '__main__':
-#     try:
-
-#         index_logger = logger.Logger(name='index_logger')
-#         processor = TaskProcessor(redis_cluster=my_redis.get_redis_client(), log=index_logger)
-#         scheduler.add_job(processor.fetch_and_process, 'interval', seconds=1, max_instances=100)
-#         scheduler.add_job(index_logger.move_old_logs, 'interval', days=1)
-        
-#         index_logger.get_logger().info('Start The Scheduler.')
-
-#         # 让主线程保持运行
-#         while True:
-#             time.sleep(5)
-
-#     except Exception as e:
-#         index_logger.get_logger().error(f'There is something went wrong in index.py: {e}')
-#     except KeyboardInterrupt:
-#         index_logger.get_logger().info('Keyboard Interrupt The Scheduler.')
-#     finally:
-#         #关闭调度器
-#         scheduler.shutdown()
-#         index_logger.get_logger().info('ShutDown The Scheduler.')
+# 启动调度器
+scheduler = BackgroundScheduler()
+scheduler.start()
 
 if __name__ == '__main__':
-    from test.GPU import test
-    test()
-    
-    # while True:
-    #     time.sleep(5)
-    
+    try:
+
+        index_logger = logger.Logger(name='index_logger')
+        processor = TaskProcessor(redis_cluster=my_redis.get_redis_client(), log=index_logger)
+        scheduler.add_job(processor.fetch_and_process, 'interval', seconds=1, max_instances=100)
+        scheduler.add_job(index_logger.move_old_logs, 'interval', days=1)
+        
+        index_logger.get_logger().info('Start The Scheduler.')
+
+        # 让主线程保持运行
+        while True:
+            time.sleep(5)
+
+    except Exception as e:
+        index_logger.get_logger().error(f'There is something went wrong in index.py: {e}')
+    except KeyboardInterrupt:
+        index_logger.get_logger().info('Keyboard Interrupt The Scheduler.')
+    finally:
+        #关闭调度器
+        scheduler.shutdown()
+        index_logger.get_logger().info('ShutDown The Scheduler.')
 
 # -------------------------- 測試用例 --------------------------
 

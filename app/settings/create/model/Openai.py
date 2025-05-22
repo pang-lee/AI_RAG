@@ -119,8 +119,21 @@ class Openai(BaseModel):
                         # 调用工具
                         tool_output = tool.invoke(action.tool_input)
 
+                        # 處理工具回傳值
+                        if isinstance(tool_output, dict) and 'response' in tool_output:
+                            # 如果回傳值是字典（如 get_vectorstore），提取 response 和 embed_tokens
+                            output_content = tool_output['response']
+                            tool_embedding_tokens = tool_output.get('embed_tokens', 0)
+                        else:
+                            # 向後兼容：如果回傳值是字符串，直接使用
+                            output_content = str(tool_output)
+                            tool_embedding_tokens = 0
+
+                        # 累加嵌入 token 數量
+                        total_embedding_tokens += embedding_tokens + tool_embedding_tokens
+
                         tool_outputs.append(
-                            {"output": tool_output, "tool_call_id": action.tool_call_id}
+                            {"output": output_content, "tool_call_id": action.tool_call_id}
                         )
 
                     # 统计工具输出的 Completion Tokens
@@ -145,7 +158,7 @@ class Openai(BaseModel):
                 if 'action' in locals():
                     return response, action.tool, total_prompt_tokens, total_completion_tokens, total_embedding_tokens, total_tokens
 
-                else:          
+                else:
                     return response, None, total_prompt_tokens, total_completion_tokens, total_embedding_tokens, total_tokens
 
             except Exception as e:

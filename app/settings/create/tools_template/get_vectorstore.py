@@ -9,12 +9,13 @@
 import re, os
 from langchain.tools import BaseTool
 from langchain_community.vectorstores import FAISS
-from dotenv import load_dotenv
-load_dotenv()
 from langchain_openai import OpenAIEmbeddings
 from langchain_ollama import OllamaEmbeddings
 from .tools_utils import get_namespace_system_json_embedding, convert_index_to_gpu
+from ..helper.token import count_tokens
 from ...logger import Logger
+from dotenv import load_dotenv
+load_dotenv()
 vc_logger = Logger(name='get_vectorstore_logger')
 
 class get_vectorstore(BaseTool):
@@ -49,6 +50,9 @@ class get_vectorstore(BaseTool):
             elif vendor is 'OllamaEmbeddings':
                 embed = OllamaEmbeddings(model=model, base_url=os.getenv("OLLAMA_SERVER"), keep_alive=0)
             
+            # 計算嵌入的 token 數量
+            embed_tokens = count_tokens(query, model=model)  # 假設 count_tokens 適用於嵌入模型
+            
             # 獲取當前目錄的向量庫路徑
             local_vc = FAISS.load_local(db_value, index_name=db_value.split('/')[-1], embeddings=embed, allow_dangerous_deserialization=True)
             
@@ -67,11 +71,11 @@ class get_vectorstore(BaseTool):
                             [規則] 嚴格遵守{reply_value} | \
                             [限制] 僅處理當前查詢"
 
-            return respond
+            return {"response": respond, "embed_tokens": embed_tokens}
 
         except Exception as e:
             return vc_logger.get_logger().error(f"An error occurred in get vectorstore vector similarity search: {e}")
-                
+
     def _arun(self):
         raise NotImplementedError("Tools does not support async")
     
