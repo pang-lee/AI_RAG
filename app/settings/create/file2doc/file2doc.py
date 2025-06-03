@@ -6,8 +6,9 @@
 # Description: In User Settings Edit
 # FilePath: \openai\application\settings\create\file2doc\file2doc.py
 # '''
-import os, json, uuid
+import os, json, uuid, requests
 import pandas as pd
+from bs4 import BeautifulSoup
 from langchain_community.document_loaders import TextLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import Docx2txtLoader
@@ -95,7 +96,6 @@ class file2doc:
                 "",
             ],
         )
-
 
     def txt2doc(self, doc):
         try:
