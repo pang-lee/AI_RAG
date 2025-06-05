@@ -6,9 +6,14 @@
 # Description: In User Settings Edit
 # FilePath: \openai\application\settings\create\file2doc\file2doc.py
 # '''
-import os, json, uuid, requests
+import os, json, uuid
 import pandas as pd
 from bs4 import BeautifulSoup
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 from langchain_community.document_loaders import TextLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import Docx2txtLoader
@@ -155,23 +160,34 @@ class file2doc:
 
     def html2doc(self, url):
         try:
-            # 發送 HTTP 請求
-            headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
-            response = requests.get(url, headers=headers, timeout=10)
-            response.raise_for_status()  # 檢查請求是否成功
+            # 設定 Chrome 為無頭模式（可選）
+            options = Options()
+            options.add_argument("--headless=new")  # 使用新版的 Headless 模式
 
-            # 解析 HTML 內容
-            soup = BeautifulSoup(response.text, 'html.parser')
-            
-            # 移除不必要的標籤（如 script, style）
-            for element in soup(['script', 'style', 'header', 'footer', 'nav']):
-                element.decompose()
+            # 初始化 WebDriver（Selenium 4.6+ 會自動管理驅動程式）
+            driver = webdriver.Chrome(options=options)
 
-            # 提取純文本
-            text = soup.get_text(separator='\n', strip=True)
+            try:
+                # 開啟目標網頁
+                driver.get(url)  # 請將此處的 URL 替換為您要爬取的網頁
 
-            # 使用 txt_spliter 進行文本分割
-            return self.txt_spliter().create_documents([text])
+                # 等待 <main> 元素出現在 DOM 中
+                wait = WebDriverWait(driver, 10)
+                main_element = wait.until(EC.presence_of_element_located((By.TAG_NAME, "main")))
+
+                # 取得 <main> 元素的 HTML 內容
+                main_html = main_element.get_attribute("innerHTML")
+
+                # 使用 BeautifulSoup 解析 HTML 並提取純文本
+                soup = BeautifulSoup(main_html, "html.parser")
+                text = soup.get_text(separator='\n', strip=True)
+
+                return self.txt_spliter().create_documents([text])
+
+            finally:
+                # 關閉瀏覽器
+                driver.quit()
+
         except Exception as e:
             file2doc_logger.get_logger().error(f'html2doc fail for {url}: {e}')
             return None
